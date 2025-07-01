@@ -1,5 +1,6 @@
 package meety.services;
 
+import meety.exceptions.DuplicateUsernameException;
 import meety.exceptions.notfound.UserNotFoundException;
 import meety.models.User;
 import meety.repositories.UserRepository;
@@ -30,6 +31,9 @@ public class UserService {
      *             - The PasswordEncoder bean must be consistent with the encoder used during authentication to correctly verify passwords later on.
      */
     public void registerUser(User user) {
+        if (usernameExists(user.getUsername())) {
+            throw new DuplicateUsernameException("Username '" + user.getUsername() + "' is already taken");
+        }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
@@ -45,5 +49,9 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+    }
+
+    public boolean usernameExists(String username) {
+        return userRepository.existsByUsername(username);
     }
 }

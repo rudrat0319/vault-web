@@ -8,10 +8,7 @@ import meety.services.UserService;
 import meety.services.auth.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -58,4 +55,13 @@ public class UserController {
         return ResponseEntity.ok(Map.of("token", token));
     }
 
+    @GetMapping("/check-username")
+    @Operation(
+            summary = "Check if username already exists",
+            description = "Returns true if the username is already taken, false otherwise."
+    )
+    public ResponseEntity<Map<String, Boolean>> checkUsernameExists(@RequestParam String username) {
+        boolean exists = userService.usernameExists(username);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment.test';
 
 @Injectable({
@@ -19,11 +19,12 @@ export class AuthService {
       .pipe(tap((res) => this.saveToken(res.token)));
   }
 
-  register(username: string, password: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/register`, {
-      username,
-      password,
-    });
+  register(username: string, password: string): Observable<string> {
+    return this.http.post(
+      `${this.apiUrl}/auth/register`,
+      { username, password },
+      { responseType: 'text' },
+    );
   }
 
   saveToken(token: string): void {
@@ -36,5 +37,13 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem('token');
+  }
+
+  checkUsernameExists(username: string): Observable<boolean> {
+    return this.http
+      .get<{
+        exists: boolean;
+      }>(`${this.apiUrl}/auth/check-username`, { params: { username } })
+      .pipe(map((response) => response.exists));
   }
 }

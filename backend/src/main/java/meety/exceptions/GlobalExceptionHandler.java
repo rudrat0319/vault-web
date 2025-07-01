@@ -62,6 +62,13 @@ public class GlobalExceptionHandler {
                 .body("Membership error: " + ex.getMessage());
     }
 
+    @ExceptionHandler(DuplicateUsernameException.class)
+    public ResponseEntity<String> handleDuplicateUsername(DuplicateUsernameException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body("Registration error: " + ex.getMessage());
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
         return ResponseEntity
