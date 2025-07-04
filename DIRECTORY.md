@@ -1,5 +1,7 @@
 # Project Structure
 
+## .
+
 - 📁 **.git**
   - 📄 [FETCH_HEAD](.git/FETCH_HEAD)
   - 📄 [HEAD](.git/HEAD)
@@ -34,11 +36,10 @@
           - 📄 [HEAD](.git/logs/refs/remotes/origin/HEAD)
           - 📄 [main](.git/logs/refs/remotes/origin/main)
   - 📁 **objects**
-    - 📁 **info**
     - 📁 **pack**
-      - 📄 [pack-461a92483c23d308ee45a35dc896d34102137ff3](.git/objects/pack/pack-461a92483c23d308ee45a35dc896d34102137ff3.idx)
-      - 📄 [pack-461a92483c23d308ee45a35dc896d34102137ff3](.git/objects/pack/pack-461a92483c23d308ee45a35dc896d34102137ff3.pack)
-      - 📄 [pack-461a92483c23d308ee45a35dc896d34102137ff3](.git/objects/pack/pack-461a92483c23d308ee45a35dc896d34102137ff3.rev)
+      - 📄 [pack-caa0e68e7dbab0c356bd677628bd4f1ec3d6a91c](.git/objects/pack/pack-caa0e68e7dbab0c356bd677628bd4f1ec3d6a91c.idx)
+      - 📄 [pack-caa0e68e7dbab0c356bd677628bd4f1ec3d6a91c](.git/objects/pack/pack-caa0e68e7dbab0c356bd677628bd4f1ec3d6a91c.pack)
+      - 📄 [pack-caa0e68e7dbab0c356bd677628bd4f1ec3d6a91c](.git/objects/pack/pack-caa0e68e7dbab0c356bd677628bd4f1ec3d6a91c.rev)
   - 📁 **refs**
     - 📁 **heads**
       - 📄 [main](.git/refs/heads/main)
@@ -46,7 +47,6 @@
       - 📁 **origin**
         - 📄 [HEAD](.git/refs/remotes/origin/HEAD)
         - 📄 [main](.git/refs/remotes/origin/main)
-    - 📁 **tags**
   - 📄 [shallow](.git/shallow)
 - 📁 **.github**
   - 📄 [dependabot](.github/dependabot.yml)
@@ -57,6 +57,7 @@
 - 📄 [.gitignore](.gitignore)
 - 📄 [DIRECTORY](DIRECTORY.md)
 - 📄 [LICENSE](LICENSE)
+- 📄 [README](README.md)
 - 📁 **backend**
   - 📄 [.gitattributes](backend/.gitattributes)
   - 📄 [.gitignore](backend/.gitignore)
