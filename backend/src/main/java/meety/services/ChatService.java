@@ -3,6 +3,7 @@ package meety.services;
 import lombok.RequiredArgsConstructor;
 import meety.dtos.ChatMessageDto;
 import meety.exceptions.notfound.GroupNotFoundException;
+import meety.exceptions.notfound.UserNotFoundException;
 import meety.models.ChatMessage;
 import meety.models.Group;
 import meety.models.PrivateChat;
@@ -35,12 +36,12 @@ public class ChatService {
 
         if (dto.getSenderId() != null) {
             sender = userRepository.findById(dto.getSenderId())
-                    .orElseThrow(() -> new IllegalArgumentException("Sender not found by ID"));
+                    .orElseThrow(() -> new UserNotFoundException("Sender not found by ID"));
         } else if (dto.getSenderUsername() != null) {
             sender = userRepository.findByUsername(dto.getSenderUsername())
-                    .orElseThrow(() -> new IllegalArgumentException("Sender not found by username"));
+                    .orElseThrow(() -> new UserNotFoundException("Sender not found by username"));
         } else {
-            throw new IllegalArgumentException("Sender information missing");
+            throw new UserNotFoundException("Sender information missing");
         }
 
         ChatMessage message = new ChatMessage();
@@ -59,10 +60,10 @@ public class ChatService {
             message.setGroup(group);
         } else if (dto.getPrivateChatId() != null) {
             PrivateChat privateChat = privateChatRepository.findById(dto.getPrivateChatId())
-                    .orElseThrow(() -> new IllegalArgumentException("PrivateChat not found"));
+                    .orElseThrow(() -> new GroupNotFoundException("PrivateChat not found"));
             message.setPrivateChat(privateChat);
         } else {
-            throw new IllegalArgumentException("Either groupId or privateChatId must be provided");
+            throw new GroupNotFoundException("Either groupId or privateChatId must be provided");
         }
 
         return chatMessageRepository.save(message);

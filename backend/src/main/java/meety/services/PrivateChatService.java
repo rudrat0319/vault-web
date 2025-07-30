@@ -1,6 +1,7 @@
 package meety.services;
 
 import lombok.RequiredArgsConstructor;
+import meety.exceptions.notfound.UserNotFoundException;
 import meety.models.PrivateChat;
 import meety.models.User;
 import meety.repositories.PrivateChatRepository;
@@ -21,9 +22,9 @@ public class PrivateChatService {
 
     public PrivateChat getOrCreatePrivateChat(String username1, String username2) {
         User user1 = userRepository.findByUsername(username1)
-                .orElseThrow(() -> new IllegalArgumentException("User1 not found"));
+                .orElseThrow(() -> new UserNotFoundException("User1 not found"));
         User user2 = userRepository.findByUsername(username2)
-                .orElseThrow(() -> new IllegalArgumentException("User2 not found"));
+                .orElseThrow(() -> new UserNotFoundException("User2 not found"));
 
         Optional<PrivateChat> chatOpt = privateChatRepository.findByUser1AndUser2(user1, user2);
         if (chatOpt.isPresent()) return chatOpt.get();
