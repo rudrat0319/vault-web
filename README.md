@@ -1,18 +1,17 @@
 # Vault Web
 
-This repository contains both backend and frontend code for local development. The backend is powered by **Spring Boot**, the frontend is built with **Angular**, and a **PostgreSQL** database is used for persistent data storage.
+**Vault Web** is a full-stack project combining a **Spring Boot** backend, an **Angular** frontend, and a **PostgreSQL** database for persistent data storage. It serves as the central entry point for all services in the Vault Web ecosystem, providing a secure and private dashboard for:
 
-➡️ See [**DIRECTORY.md**](https://github.com/DenizAltunkapan/meety/blob/main/DIRECTORY.md) for a full, generated project structure overview.
-
----
-
-**Vault Web** is the central entry point for all services in the Vault Web ecosystem.  
-It provides a secure and private dashboard to access:
-
-- 🔐 A built-in password manager
-- ☁️ Your private file cloud (via `vault-cloud`)
-- 💬 Internal chats and collaboration tools
+- 💬 Internal chats and collaboration tools 
+- ☁️ Private file cloud (via `vault-cloud`)
+- 🔐 Built-in password manager
 - 🧑‍💻 User and session management
+
+## Project Structure
+
+- See [**DIRECTORY.md**](https://github.com/Vault-Web/vault-web/blob/main/DIRECTORY.md) for a full, generated project structure overview.  
+
+- View our [**Javadoc documentation**](https://vault-web.github.io/vault-web) for a complete backend API overview.
 
 ---
 
@@ -25,7 +24,7 @@ The project uses Docker to quickly spin up a PostgreSQL database and pgAdmin ins
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/DenizAltunkapan/meety.git
+git clone https://github.com/Vault-Web/vault-web.git
 ```
 
 ---
@@ -40,7 +39,7 @@ DB_HOST=localhost
 DB_PORT=5432
 POSTGRES_USER=your_postgres_user
 POSTGRES_PASSWORD=your_postgres_password
-POSTGRES_DB=meetydb
+POSTGRES_DB=vaultdb
 
 # pgAdmin config
 PGADMIN_DEFAULT_EMAIL=your_email@example.com
