@@ -106,7 +106,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body("Invalid credentials: " + ex.getMessage());
+                .body("Authentication failed");
     }
 
     /**
