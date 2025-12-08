@@ -10,8 +10,9 @@ import { Router } from '@angular/router';
 export class AuthService {
   private apiUrl = environment.mainApiUrl;
 
-  constructor(private http: HttpClient,
-     private router: Router 
+  constructor(
+    private http: HttpClient,
+    private router: Router,
   ) {}
 
   login(username: string, password: string): Observable<{ token: string }> {
