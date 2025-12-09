@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +32,7 @@ public class UserController {
                     Accepts a JSON object containing username and plaintext password.
                     The password is hashed using BCrypt (via Spring Security's PasswordEncoder) before being persisted.
                     The new user is assigned the default role 'User'.""")
-  public ResponseEntity<String> register(@RequestBody UserDto user) {
+  public ResponseEntity<String> register(@Valid @RequestBody UserDto user) {
     userService.registerUser(new User(user));
     return ResponseEntity.ok("User registered successfully");
   }
@@ -50,7 +52,7 @@ public class UserController {
                     - On success, the user details are fetched and a JWT is generated via JwtUtil.
                     - The token can be used in the 'Authorization' header for protected endpoints.
                     """)
-  public ResponseEntity<?> login(@RequestBody UserDto user) {
+  public ResponseEntity<?> login(@Valid @RequestBody UserDto user) {
     String token = authService.login(user.getUsername(), user.getPassword());
     return ResponseEntity.ok(Map.of("token", token));
   }
