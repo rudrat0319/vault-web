@@ -92,28 +92,14 @@ cd backend
 
 ### Timezone configuration (important for some environments)
 
-On some systems, the JVM may default to deprecated timezone identifiers (for example `Asia/Calcutta`), which PostgreSQL rejects during JDBC connection initialization.
+On some systems, the backend may fail to start because PostgreSQL rejects a deprecated JVM timezone identifier during startup.
 
-If the backend fails to start with an error similar to:
+If you encounter an error like:
 
 ```text
 FATAL: invalid value for parameter "TimeZone"
 ```
-
-explicitly configure the JVM timezone when running the backend. This ensures the PostgreSQL JDBC driver does not propagate deprecated timezone identifiers during connection startup.
-
-Recommended (cross-platform, works on Windows, macOS, Linux)
-
-```bash
-./mvnw "-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC" spring-boot:run
-```
-
-Alternative (Unix-like shells)
-
-```bash
-JAVA_OPTS=-Duser.timezone=UTC
-./mvnw spring-boot:run
-```
+see common_problems.md for platform-specific troubleshooting and startup guidance.
 
 ---
 
