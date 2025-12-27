@@ -17,6 +17,7 @@
             - 📄 [WebSocketConfig.java](backend/src/main/java/vaultWeb/config/websocket/WebSocketConfig.java)
         - 📁 **controllers**
           - 📄 [ChatController.java](backend/src/main/java/vaultWeb/controllers/ChatController.java)
+          - 📄 [DashboardController.java](backend/src/main/java/vaultWeb/controllers/DashboardController.java)
           - 📄 [GroupController.java](backend/src/main/java/vaultWeb/controllers/GroupController.java)
           - 📄 [PollController.java](backend/src/main/java/vaultWeb/controllers/PollController.java)
           - 📄 [PrivateChatController.java](backend/src/main/java/vaultWeb/controllers/PrivateChatController.java)
@@ -27,7 +28,10 @@
           - 📄 [PollRequestDto.java](backend/src/main/java/vaultWeb/dtos/PollRequestDto.java)
           - 📄 [PollResponseDto.java](backend/src/main/java/vaultWeb/dtos/PollResponseDto.java)
           - 📄 [PrivateChatDto.java](backend/src/main/java/vaultWeb/dtos/PrivateChatDto.java)
+          - 📁 **dashboard**
+            - 📄 [UserDashboardDto.java](backend/src/main/java/vaultWeb/dtos/dashboard/UserDashboardDto.java)
           - 📁 **user**
+            - 📄 [ChangePasswordRequest.java](backend/src/main/java/vaultWeb/dtos/user/ChangePasswordRequest.java)
             - 📄 [UserDto.java](backend/src/main/java/vaultWeb/dtos/user/UserDto.java)
             - 📄 [UserResponseDto.java](backend/src/main/java/vaultWeb/dtos/user/UserResponseDto.java)
         - 📁 **exceptions**
@@ -37,10 +41,10 @@
           - 📄 [DecryptionFailedException.java](backend/src/main/java/vaultWeb/exceptions/DecryptionFailedException.java)
           - 📄 [DuplicateUsernameException.java](backend/src/main/java/vaultWeb/exceptions/DuplicateUsernameException.java)
           - 📄 [EncryptionFailedException.java](backend/src/main/java/vaultWeb/exceptions/EncryptionFailedException.java)
-          - 📄 [PollDoesNotBelongToGroupException.java](backend/src/main/java/vaultWeb/exceptions/PollDoesNotBelongToGroupException.java)
-          - 📄 [PollOptionNotFoundException.java](backend/src/main/java/vaultWeb/exceptions/PollOptionNotFoundException.java)
           - 📄 [GlobalExceptionHandler.java](backend/src/main/java/vaultWeb/exceptions/GlobalExceptionHandler.java)
           - 📄 [LastAdminException.java](backend/src/main/java/vaultWeb/exceptions/LastAdminException.java)
+          - 📄 [PollDoesNotBelongToGroupException.java](backend/src/main/java/vaultWeb/exceptions/PollDoesNotBelongToGroupException.java)
+          - 📄 [PollOptionNotFoundException.java](backend/src/main/java/vaultWeb/exceptions/PollOptionNotFoundException.java)
           - 📄 [UnauthorizedException.java](backend/src/main/java/vaultWeb/exceptions/UnauthorizedException.java)
           - 📁 **notfound**
             - 📄 [GroupNotFoundException.java](backend/src/main/java/vaultWeb/exceptions/notfound/GroupNotFoundException.java)
@@ -76,6 +80,7 @@
             - 📄 [AdminOnlyAspect.java](backend/src/main/java/vaultWeb/security/aspects/AdminOnlyAspect.java)
         - 📁 **services**
           - 📄 [ChatService.java](backend/src/main/java/vaultWeb/services/ChatService.java)
+          - 📄 [DashboardService.java](backend/src/main/java/vaultWeb/services/DashboardService.java)
           - 📄 [GroupService.java](backend/src/main/java/vaultWeb/services/GroupService.java)
           - 📄 [PollService.java](backend/src/main/java/vaultWeb/services/PollService.java)
           - 📄 [PrivateChatService.java](backend/src/main/java/vaultWeb/services/PrivateChatService.java)
@@ -107,6 +112,7 @@
         - 📄 [FileDto.ts](frontend/src/app/models/dtos/FileDto.ts)
         - 📄 [FolderDto.ts](frontend/src/app/models/dtos/FolderDto.ts)
         - 📄 [PrivateChatDto.ts](frontend/src/app/models/dtos/PrivateChatDto.ts)
+        - 📄 [UserDashboardDto.ts](frontend/src/app/models/dtos/UserDashboardDto.ts)
         - 📄 [UserDto.ts](frontend/src/app/models/dtos/UserDto.ts)
     - 📁 **navbar**
       - 📄 [navbar.component.html](frontend/src/app/navbar/navbar.component.html)
@@ -117,6 +123,10 @@
         - 📄 [cloud.component.html](frontend/src/app/pages/cloud/cloud.component.html)
         - 📄 [cloud.component.scss](frontend/src/app/pages/cloud/cloud.component.scss)
         - 📄 [cloud.component.ts](frontend/src/app/pages/cloud/cloud.component.ts)
+      - 📁 **dashboard**
+        - 📄 [dashboard.component.html](frontend/src/app/pages/dashboard/dashboard.component.html)
+        - 📄 [dashboard.component.scss](frontend/src/app/pages/dashboard/dashboard.component.scss)
+        - 📄 [dashboard.component.ts](frontend/src/app/pages/dashboard/dashboard.component.ts)
       - 📁 **home**
         - 📄 [home.component.html](frontend/src/app/pages/home/home.component.html)
         - 📄 [home.component.scss](frontend/src/app/pages/home/home.component.scss)
@@ -136,7 +146,9 @@
     - 📁 **services**
       - 📄 [auth.service.ts](frontend/src/app/services/auth.service.ts)
       - 📄 [cloud.service.ts](frontend/src/app/services/cloud.service.ts)
+      - 📄 [dashboard.service.ts](frontend/src/app/services/dashboard.service.ts)
       - 📄 [private-chat.service.ts](frontend/src/app/services/private-chat.service.ts)
+      - 📄 [theme.service.ts](frontend/src/app/services/theme.service.ts)
       - 📄 [user.service.ts](frontend/src/app/services/user.service.ts)
       - 📄 [web-socket.service.ts](frontend/src/app/services/web-socket.service.ts)
   - 📁 **environments**
