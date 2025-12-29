@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable, tap } from 'rxjs';
+import { finalize, map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
 
@@ -19,7 +19,11 @@ export class AuthService {
     return this.http
       .post<{
         token: string;
-      }>(`${this.apiUrl}/auth/login`, { username, password })
+      }>(
+        `${this.apiUrl}/auth/login`,
+        { username, password },
+        { withCredentials: true },
+      )
       .pipe(
         tap((res) => {
           this.saveToken(res.token);
@@ -33,6 +37,14 @@ export class AuthService {
       `${this.apiUrl}/auth/register`,
       { username, password },
       { responseType: 'text' },
+    );
+  }
+
+  refresh(): Observable<{ token: string }> {
+    return this.http.post<{ token: string }>(
+      `${this.apiUrl}/auth/refresh`,
+      {},
+      { withCredentials: true },
     );
   }
 
@@ -69,8 +81,18 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
-
-    this.router.navigate(['/login']);
+    this.http
+      .post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true })
+      .pipe(
+        finalize(() => {
+          this.router.navigate(['/login']);
+        }),
+      )
+      .subscribe({
+        error: (err) => {
+          console.error('Backend logout failed', err);
+        },
+      });
   }
 
   checkUsernameExists(username: string): Observable<boolean> {

@@ -3,6 +3,7 @@ package vaultWeb;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -23,6 +24,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * <p>Implements {@link WebMvcConfigurer} to allow optional customization of Spring MVC
  * configuration.
  */
+@EnableScheduling
 @EnableAspectJAutoProxy
 @SpringBootApplication
 public class BackendApplication implements WebMvcConfigurer {

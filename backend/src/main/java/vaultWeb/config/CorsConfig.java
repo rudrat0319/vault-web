@@ -12,7 +12,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * Global CORS configuration Source for the application.
  *
  * <p>This configuration allows the frontend application running on a different origin (e.g.,
- * http://localhost:4200) to make HTTP requests to the backend without being blocked by the
+ * https://localhost:4200) to make HTTP requests to the backend without being blocked by the
  * browser's same-origin policy.
  *
  * <p>It allows all HTTP methods, headers, and credentials to be sent.
@@ -29,7 +29,7 @@ public class CorsConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(List.of("http://localhost:4200"));
+    config.setAllowedOrigins(List.of("https://localhost:4200"));
     config.setAllowedHeaders(
         Arrays.asList(
             "Authorization",

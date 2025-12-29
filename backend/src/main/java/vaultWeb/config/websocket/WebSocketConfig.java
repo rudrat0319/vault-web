@@ -52,7 +52,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     registry
         .addEndpoint("/ws-chat")
         .addInterceptors(new JwtHandshakeInterceptor(jwtUtil))
-        .setAllowedOrigins("http://localhost:4200")
+        .setAllowedOrigins("https://localhost:4200")
         .withSockJS();
   }
 
