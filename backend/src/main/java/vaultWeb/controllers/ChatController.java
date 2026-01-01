@@ -1,6 +1,9 @@
 package vaultWeb.controllers;
 
+import jakarta.validation.Valid;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -15,6 +18,7 @@ import vaultWeb.services.ChatService;
  * <p>Supports both group chat and private messages. Messages are first persisted via ChatService
  * and then dispatched to the corresponding topics or users.
  */
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class ChatController {
@@ -43,7 +47,7 @@ public class ChatController {
    * @param messageDto DTO containing message content, sender information, and private chat ID
    */
   @MessageMapping("/chat.private.send")
-  public void sendPrivateMessage(@Payload ChatMessageDto messageDto) {
+  public void sendPrivateMessage(@Valid @Payload ChatMessageDto messageDto) {
     ChatMessage savedMessage = chatService.saveMessage(messageDto);
 
     String decryptedContent =
@@ -59,8 +63,14 @@ public class ChatController {
     String user2 = savedMessage.getPrivateChat().getUser2().getUsername();
 
     messagingTemplate.convertAndSendToUser(user1, "/queue/private", responseDto);
-    if (!user1.equals(user2)) {
-      messagingTemplate.convertAndSendToUser(user2, "/queue/private", responseDto);
-    }
+    Set<String> recipients = Set.of(user1, user2);
+
+    recipients.forEach(
+        user -> messagingTemplate.convertAndSendToUser(user, "/queue/private", responseDto));
+
+    log.debug(
+        "Private message sent from {} to privateChat {}",
+        responseDto.getSenderUsername(),
+        responseDto.getPrivateChatId());
   }
 }
