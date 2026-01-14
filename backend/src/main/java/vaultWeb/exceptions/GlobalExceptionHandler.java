@@ -110,7 +110,8 @@ public class GlobalExceptionHandler {
   /** Handles RateLimitExceededException and returns 429 Limit Exceeded. */
   @ExceptionHandler(RateLimitExceededException.class)
   public ResponseEntity<String> handleRateLimitExceededException(RateLimitExceededException ex) {
-    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("Too Many Requests: " + ex.getMessage());
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .body("Too Many Requests: " + ex.getMessage());
   }
 
   /** Handles any other RuntimeException and returns 500 Internal Server Error. */

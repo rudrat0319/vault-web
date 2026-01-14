@@ -8,13 +8,12 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ApiRateLimit {
-    int capacity() default 5;
-    int refillTokens() default 5;
-    int refillDurationMinutes() default 1;
-    
-    /**
-     * If true, uses IP address for rate limiting.
-     * If false, uses user identifier (token).
-     */
-    boolean useIpAddress() default true;
+  int capacity() default 5;
+
+  int refillTokens() default 5;
+
+  int refillDurationMinutes() default 1;
+
+  /** If true, uses IP address for rate limiting. If false, uses user identifier (token). */
+  boolean useIpAddress() default true;
 }
