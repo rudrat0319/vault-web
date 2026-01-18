@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -165,5 +166,24 @@ public class JwtUtil {
    */
   public String extractTokenId(String refreshToken) {
     return parseRefreshToken(refreshToken).getId();
+  }
+
+  /**
+   * Extracts username from Authorization header if present and valid
+   *
+   * @param request the HTTP request
+   * @return username or null if not authenticated
+   */
+  public String extractUsernameFromRequest(HttpServletRequest request) {
+    try {
+      String authHeader = request.getHeader("Authorization");
+      if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        return null;
+      }
+      String token = authHeader.substring(7);
+      return extractUsername(token);
+    } catch (Exception e) {
+      return null;
+    }
   }
 }

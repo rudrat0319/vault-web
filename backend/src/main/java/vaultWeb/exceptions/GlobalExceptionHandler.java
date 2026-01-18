@@ -107,6 +107,14 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Poll error: " + ex.getMessage());
   }
 
+  /** Handles RateLimitExceededException and returns 429 Limit Exceeded. */
+  @ExceptionHandler(RateLimitExceededException.class)
+  public ResponseEntity<String> handleRateLimitExceededException(RateLimitExceededException ex) {
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+        .body("Too Many Requests: " + ex.getMessage());
+  }
+
   /** Handles any other RuntimeException and returns 500 Internal Server Error. */
   @ExceptionHandler(RuntimeException.class)
   public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {

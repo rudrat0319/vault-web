@@ -16,6 +16,7 @@ import vaultWeb.dtos.user.UserDto;
 import vaultWeb.dtos.user.UserResponseDto;
 import vaultWeb.exceptions.UnauthorizedException;
 import vaultWeb.models.User;
+import vaultWeb.security.annotations.ApiRateLimit;
 import vaultWeb.services.UserService;
 import vaultWeb.services.auth.AuthService;
 import vaultWeb.services.auth.LoginResult;
@@ -39,6 +40,7 @@ public class UserController {
                             Accepts a JSON object containing username and plaintext password.
                             The password is hashed using BCrypt (via Spring Security's PasswordEncoder) before being persisted.
                             The new user is assigned the default role 'User'.""")
+  @ApiRateLimit(capacity = 5, refillTokens = 5, refillDurationMinutes = 1, useIpAddress = true)
   public ResponseEntity<String> register(@Valid @RequestBody UserDto user) {
     userService.registerUser(new User(user));
     return ResponseEntity.ok("User registered successfully");
@@ -62,6 +64,7 @@ public class UserController {
 
                     The access token should be sent in the Authorization header for protected endpoints.
                     """)
+  @ApiRateLimit(capacity = 5, refillTokens = 5, refillDurationMinutes = 1, useIpAddress = true)
   @PostMapping("/login")
   public ResponseEntity<?> login(@Valid @RequestBody UserDto user, HttpServletResponse response) {
     LoginResult res = authService.login(user.getUsername(), user.getPassword());
@@ -94,6 +97,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Access token refreshed successfully"),
     @ApiResponse(responseCode = "401", description = "Invalid, expired, or revoked refresh token")
   })
+  @ApiRateLimit(capacity = 5, refillTokens = 5, refillDurationMinutes = 1, useIpAddress = true)
   @PostMapping("/refresh")
   public ResponseEntity<?> refresh(
       @CookieValue(name = "refresh_token", required = false) String refreshToken,
@@ -152,6 +156,7 @@ public class UserController {
     return ResponseEntity.ok(users);
   }
 
+  @ApiRateLimit(capacity = 5, refillTokens = 5, refillDurationMinutes = 1, useIpAddress = true)
   @PostMapping("/change-password")
   @Operation(
       summary = "Change password for the authenticated user",
