@@ -13,6 +13,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -22,6 +23,7 @@ import vaultWeb.security.annotations.ApiRateLimit;
 
 @Aspect
 @Component
+@Profile("!test")
 public class RateLimitAspect {
 
   // Caffeine Cache with eviction

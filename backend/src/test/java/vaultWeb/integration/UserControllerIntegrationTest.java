@@ -3,11 +3,6 @@ package vaultWeb.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -16,8 +11,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import vaultWeb.dtos.user.ChangePasswordRequest;
 import vaultWeb.dtos.user.UserDto;
 import vaultWeb.models.User;
@@ -27,6 +26,15 @@ import vaultWeb.security.JwtUtil;
 class UserControllerIntegrationTest extends IntegrationTestBase {
 
   // ============================================================================
+  // Test Constants
+  // ============================================================================
+  private static final String TEST_USERNAME = "testuser";
+  private static final String TEST_PASSWORD = "TestPassword1!";
+  private static final String NEW_PASSWORD = "NewPassword1!";
+  private static final int REFRESH_TOKEN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
+  private static final long EXPIRED_TOKEN_OFFSET_MS = -60 * 60 * 1000; // 1 hour in past
+
+  // ============================================================================
   // Test Utility Methods
   // ============================================================================
   @Autowired private MockMvc mockMvc;
@@ -34,6 +42,13 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
   @Autowired private UserRepository userRepository;
   @Autowired private JwtUtil jwtUtil;
 
+  /**
+   * Creates a UserDto with the given username and password.
+   *
+   * @param username the username for the user
+   * @param password the password for the user
+   * @return a UserDto instance
+   */
   private UserDto createUserDto(String username, String password) {
     UserDto dto = new UserDto();
     dto.setUsername(username);
@@ -41,20 +56,46 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
     return dto;
   }
 
+  /**
+   * Extracts a cookie from the MvcResult response.
+   *
+   * @param result the MvcResult from a test request
+   * @param cookieName the name of the cookie to extract
+   * @return the Cookie object, or null if not found
+   */
   private Cookie extractCookie(MvcResult result, String cookieName) {
     return result.getResponse().getCookie(cookieName);
   }
 
+  /**
+   * Extracts the JWT access token from a JSON response.
+   *
+   * @param result the MvcResult containing the JSON response
+   * @return the access token string
+   * @throws Exception if JSON parsing fails
+   */
   private String extractTokenFromResponse(MvcResult result) throws Exception {
     String json = result.getResponse().getContentAsString();
     JsonNode node = objectMapper.readTree(json);
     return node.get("token").asText();
   }
 
+  /**
+   * Formats a JWT token into an Authorization header value.
+   *
+   * @param token the JWT access token
+   * @return the formatted "Bearer {token}" string
+   */
   private String authHeader(String token) {
     return "Bearer " + token;
   }
 
+  /**
+   * Registers a new user via the /api/auth/register endpoint.
+   *
+   * @param testUser the user DTO containing registration details
+   * @throws Exception if the registration request fails
+   */
   private void registerUser(UserDto testUser) throws Exception {
     mockMvc
         .perform(
@@ -65,16 +106,24 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
         .andExpect(content().string("User registered successfully"));
   }
 
-  private MvcResult loginUser(UserDto testUser)throws Exception{
+  /**
+   * Logs in a user via the /api/auth/login endpoint and returns the MvcResult containing the access
+   * token and refresh token cookie.
+   *
+   * @param testUser the user DTO containing login credentials
+   * @return the MvcResult with access token in response body and refresh token in cookie
+   * @throws Exception if the login request fails
+   */
+  private MvcResult loginUser(UserDto testUser) throws Exception {
 
-      return mockMvc.perform(
-                post("/api/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(testUser)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").exists())
-                .andReturn();
-   
+    return mockMvc
+        .perform(
+            post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(testUser)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.token").exists())
+        .andReturn();
   }
 
   // ============================================================================
@@ -93,7 +142,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldRegisterNewUser() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
 
     // Perform registration request and verify response
     registerUser(testUser);
@@ -108,7 +157,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldFailRegistration_WhenDuplicateUsername() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     mockMvc
         .perform(
@@ -116,7 +165,9 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(testUser)))
         .andExpect(status().isConflict())
-        .andExpect(content().string("Registration error: Username 'testuser' is already taken"));
+        .andExpect(
+            content()
+                .string("Registration error: Username '" + TEST_USERNAME + "' is already taken"));
 
     assertTrue(userRepository.findByUsername(testUser.getUsername()).isPresent());
   }
@@ -124,7 +175,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
   @Test
   void shouldLogin_WithValidCredentials() throws Exception {
     // Register a user first
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
 
     // Login with the registered user and capture result
@@ -149,7 +200,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
         refreshTokenCookie.getPath(),
         "refresh_token path should be /api/auth/refresh");
     assertEquals(
-        30 * 24 * 60 * 60,
+        REFRESH_TOKEN_MAX_AGE_SECONDS,
         refreshTokenCookie.getMaxAge(),
         "refresh_token should expire in 30 days");
   }
@@ -160,7 +211,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldGenerateValidJwtToken_OnLogin() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result =
         mockMvc
@@ -179,7 +230,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldAccessProtectedEndpoint_WithValidToken() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result =
         mockMvc
@@ -194,7 +245,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
     mockMvc
         .perform(get("/api/auth/users").header("Authorization", authHeader(token)))
         .andExpect(status().isOk())
-        .andExpect(content().json("[{\"username\":\"testuser\"}]"));
+        .andExpect(content().json("[{\"username\":\"" + TEST_USERNAME + "\"}]"));
   }
 
   @Test
@@ -235,14 +286,14 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
   @Test
   void shouldReject_WithExpiredToken() throws Exception {
     // Register a user first
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
 
     // Get the user from database to generate expired token
     User savedUser = userRepository.findByUsername(testUser.getUsername()).get();
 
     // Generate an expired token (expired 1 hour ago)
-    String expiredToken = jwtUtil.generateTokenWithExpiration(savedUser, -60 * 60 * 1000);
+    String expiredToken = jwtUtil.generateTokenWithExpiration(savedUser, EXPIRED_TOKEN_OFFSET_MS);
 
     // Try to access protected endpoint with expired token using RestTemplate
     org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
@@ -266,57 +317,78 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldRefreshAccessToken_WithValidRefreshToken() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result = loginUser(testUser);
     String refreshToken = extractCookie(result, "refresh_token").getValue();
-    result= mockMvc
-        .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
-        .andExpect(status().isOk())
-          .andExpect(jsonPath("$.token").exists())
-          .andReturn();
-  //should verify the refresh token has been sent with the cookie
-  Cookie newRefreshToken = extractCookie(result, "refresh_token");
-  assertNotNull(newRefreshToken, "New refresh token should be set");
-  assertTrue(newRefreshToken.getValue().length() > 0, "New refresh token should have a value");
-  assertTrue(!newRefreshToken.getValue().equals(refreshToken), "Refresh token should be rotated");
-  //should verify the refresh token has been revoked
-  assertTrue(refreshTokenRepository.findByTokenIdAndRevokedFalse(refreshToken).isEmpty());
+    result =
+        mockMvc
+            .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").exists())
+            .andReturn();
+    // Verify the refresh token has been sent with the cookie
+    Cookie newRefreshToken = extractCookie(result, "refresh_token");
+    assertNotNull(newRefreshToken, "New refresh token should be set");
+    assertTrue(newRefreshToken.getValue().length() > 0, "New refresh token should have a value");
+    assertTrue(!newRefreshToken.getValue().equals(refreshToken), "Refresh token should be rotated");
+
+    // Verify the old refresh token has been revoked in database
+    String oldTokenId = jwtUtil.extractTokenId(refreshToken);
+    assertTrue(
+        refreshTokenRepository.findByTokenIdAndRevokedFalse(oldTokenId).isEmpty(),
+        "Old refresh token should be revoked after rotation");
   }
 
   @Test
-  void shouldRejectRefresh_WithRevokedToken() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+  void shouldRotateRefreshToken_AndRejectOldToken() throws Exception {
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result = loginUser(testUser);
     String refreshToken = extractCookie(result, "refresh_token").getValue();
-    result= mockMvc
-        .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
-        .andExpect(status().isOk())
-          .andExpect(jsonPath("$.token").exists())
-          .andReturn();
 
+    // First refresh - should succeed and rotate the token
+    result =
+        mockMvc
+            .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").exists())
+            .andReturn();
+
+    // Second refresh with old token - should fail because token was rotated
     mockMvc
         .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
         .andExpect(status().isUnauthorized());
-    assertTrue(refreshTokenRepository.findByTokenIdAndRevokedFalse(refreshToken).isEmpty());
+
+    // Verify old token is revoked in database
+    String oldTokenId = jwtUtil.extractTokenId(refreshToken);
+    assertTrue(
+        refreshTokenRepository.findByTokenIdAndRevokedFalse(oldTokenId).isEmpty(),
+        "Old refresh token should be revoked after rotation");
   }
 
   @Test
   void shouldRejectRefresh_WithInvalidToken() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result = loginUser(testUser);
     String refreshToken = extractCookie(result, "refresh_token").getValue();
+
+    // Attempt refresh with invalid token - should be rejected
     mockMvc
         .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", "invalid_token")))
         .andExpect(status().isUnauthorized());
-    assertTrue(refreshTokenRepository.findByTokenIdAndRevokedFalse(refreshToken).isEmpty());
+
+    // Verify the valid token is still active (not affected by invalid attempt)
+    String validTokenId = jwtUtil.extractTokenId(refreshToken);
+    assertTrue(
+        refreshTokenRepository.findByTokenIdAndRevokedFalse(validTokenId).isPresent(),
+        "Valid refresh token should still be active after invalid token attempt");
   }
 
   @Test
   void shouldLogout_AndRevokeRefreshToken() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result = loginUser(testUser);
     String refreshToken = extractCookie(result, "refresh_token").getValue();
@@ -343,25 +415,29 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
   @Test
   void shouldChangePassword_WithValidCurrentPassword() throws Exception {
 
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result = loginUser(testUser);
     String token = extractTokenFromResponse(result);
     ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest();
-    changePasswordRequest.setCurrentPassword("TestPassword1!");
-    changePasswordRequest.setNewPassword("NewPassword1!");
+    changePasswordRequest.setCurrentPassword(TEST_PASSWORD);
+    changePasswordRequest.setNewPassword(NEW_PASSWORD);
 
-        mockMvc 
-            .perform(post("/api/auth/change-password").header("Authorization", authHeader(token)).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(changePasswordRequest)))
-            .andExpect(status().isNoContent()).andReturn();
+    mockMvc
+        .perform(
+            post("/api/auth/change-password")
+                .header("Authorization", authHeader(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(changePasswordRequest)))
+        .andExpect(status().isNoContent())
+        .andReturn();
 
-    
-    testUser.setPassword("NewPassword1!");
+    testUser.setPassword(NEW_PASSWORD);
     result = loginUser(testUser);
     String newToken = extractTokenFromResponse(result);
     assertTrue(jwtUtil.validateToken(newToken), "New password should work for login");
 
-    testUser.setPassword("TestPassword1!");
+    testUser.setPassword(TEST_PASSWORD);
     mockMvc
         .perform(
             post("/api/auth/login")
@@ -372,57 +448,71 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldRejectChangePassword_WithWrongCurrentPassword() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result = loginUser(testUser);
     String token = extractTokenFromResponse(result);
     ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest();
     changePasswordRequest.setCurrentPassword("TestPassword2!");
-    changePasswordRequest.setNewPassword("NewPassword1!");
+    changePasswordRequest.setNewPassword(NEW_PASSWORD);
     mockMvc
-    .perform(post("/api/auth/change-password").header("Authorization", authHeader(token)).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(changePasswordRequest)))
-    .andExpect(status().isUnauthorized());
+        .perform(
+            post("/api/auth/change-password")
+                .header("Authorization", authHeader(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(changePasswordRequest)))
+        .andExpect(status().isUnauthorized());
   }
 
   // ==================== Stage 6: Full E2E Scenarios ====================
 
   @Test
   void shouldCompleteFullAuthenticationFlow() throws Exception {
-    
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
     MvcResult result = loginUser(testUser);
     String token = extractTokenFromResponse(result);
     String refreshToken = extractCookie(result, "refresh_token").getValue();
-    
+
+    // Access protected endpoint with valid token
     mockMvc
-    .perform(get("/api/auth/users").header("Authorization", authHeader(token)))
-    .andExpect(status().isOk())
-    .andExpect(content().json("[{\"username\":\"testuser\"}]"));
-    
-    result = mockMvc
-    .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
-    .andExpect(status().isOk())
-    .andExpect(jsonPath("$.token").exists())
-    .andReturn();
-    String newToken = extractTokenFromResponse(result);
-    assertTrue(jwtUtil.validateToken(newToken), "New token should work for refresh");
-    
+        .perform(get("/api/auth/users").header("Authorization", authHeader(token)))
+        .andExpect(status().isOk())
+        .andExpect(content().json("[{\"username\":\"" + TEST_USERNAME + "\"}]"));
+
+    // Refresh token to get new tokens (this rotates the refresh token)
+    result =
+        mockMvc
+            .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").exists())
+            .andReturn();
+    String newAccessToken = extractTokenFromResponse(result);
+    String newRefreshToken = extractCookie(result, "refresh_token").getValue();
+    assertTrue(jwtUtil.validateToken(newAccessToken), "New access token should be valid");
+
+    // Logout with the NEW refresh token
     mockMvc
-    .perform(post("/api/auth/logout").cookie(new Cookie("refresh_token", refreshToken)))
-    .andExpect(status().isOk());
-    assertTrue(refreshTokenRepository.findByTokenIdAndRevokedFalse(refreshToken).isEmpty());
-    
+        .perform(post("/api/auth/logout").cookie(new Cookie("refresh_token", newRefreshToken)))
+        .andExpect(status().isOk());
+
+    // Verify the NEW refresh token is revoked after logout
+    String newTokenId = jwtUtil.extractTokenId(newRefreshToken);
+    assertTrue(
+        refreshTokenRepository.findByTokenIdAndRevokedFalse(newTokenId).isEmpty(),
+        "New refresh token should be revoked after logout");
+
+    // Verify refresh with revoked token fails
     mockMvc
-    .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
-    .andExpect(status().isUnauthorized());
-  
+        .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", newRefreshToken)))
+        .andExpect(status().isUnauthorized());
   }
 
   @Test
   void shouldHandleMultipleSessions_PerUser() throws Exception {
     // Register user
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
 
     // Login from "client 1" to get first refresh token
@@ -441,7 +531,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
     String tokenId2 = jwtUtil.extractTokenId(refreshToken2);
 
     // Verify only one non-revoked refresh token exists in database (single session enforcement)
-    User user = userRepository.findByUsername("testuser").orElseThrow();
+    User user = userRepository.findByUsername(TEST_USERNAME).orElseThrow();
     long nonRevokedCount =
         refreshTokenRepository.findAll().stream()
             .filter(token -> !token.isRevoked() && token.getUser().getId().equals(user.getId()))
@@ -472,12 +562,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldValidatePasswordComplexity_OnRegistration() throws Exception {
-    String[] invalidPasswords = {
-      "Short1!",
-      "nouppercase1!",
-      "NoDigit!",
-      "NoSpecial1"
-    };
+    String[] invalidPasswords = {"Short1!", "nouppercase1!", "NoDigit!", "NoSpecial1"};
 
     for (int i = 0; i < invalidPasswords.length; i++) {
       UserDto testUser = createUserDto("testuser" + i, invalidPasswords[i]);
@@ -492,7 +577,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
   @Test
   void shouldCheckUsername_Availability() throws Exception {
-    UserDto testUser = createUserDto("testuser", "TestPassword1!");
+    UserDto testUser = createUserDto(TEST_USERNAME, TEST_PASSWORD);
     registerUser(testUser);
 
     mockMvc
