@@ -10,17 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import vaultWeb.dtos.user.ChangePasswordRequest;
 import vaultWeb.dtos.user.UserDto;
 import vaultWeb.models.User;
-import vaultWeb.repositories.UserRepository;
 import vaultWeb.security.JwtUtil;
 
 class UserControllerIntegrationTest extends IntegrationTestBase {
@@ -35,11 +32,8 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
   private static final long EXPIRED_TOKEN_OFFSET_MS = -60 * 60 * 1000; // 1 hour in past
 
   // ============================================================================
-  // Test Utility Methods
+  // Test Dependencies (mockMvc, objectMapper, userRepository inherited from base)
   // ============================================================================
-  @Autowired private MockMvc mockMvc;
-  @Autowired private ObjectMapper objectMapper;
-  @Autowired private UserRepository userRepository;
   @Autowired private JwtUtil jwtUtil;
 
   /**
@@ -88,6 +82,34 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
    */
   private String authHeader(String token) {
     return "Bearer " + token;
+  }
+
+  /**
+   * Performs a GET request to a protected endpoint using RestTemplate.
+   *
+   * <p>This helper method is used for testing filter-level authentication failures that occur
+   * before Spring MVC's DispatcherServlet. RestTemplate makes real HTTP requests through the entire
+   * servlet container stack, properly simulating how Spring Security filters handle invalid/expired
+   * tokens and delegate to AuthenticationEntryPoint.
+   *
+   * @param endpoint the API endpoint path (e.g., "/api/auth/users")
+   * @param authToken the Authorization header value, or null for no auth header
+   * @return the ResponseEntity from the request
+   */
+  private org.springframework.http.ResponseEntity<String> performRestTemplateGet(
+      String endpoint, String authToken) {
+    org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+    if (authToken != null) {
+      headers.set("Authorization", authToken);
+    }
+    org.springframework.http.HttpEntity<String> entity =
+        new org.springframework.http.HttpEntity<>(headers);
+
+    return restTemplate.exchange(
+        "http://localhost:" + port + endpoint,
+        org.springframework.http.HttpMethod.GET,
+        entity,
+        String.class);
   }
 
   /**
@@ -206,7 +228,7 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
   }
 
   // ============================================================================
-  // Stage 3: JWT Token Integration (4 tests)
+  // Stage 3: JWT Token Integration (5 tests)
   // ============================================================================
 
   @Test
@@ -248,37 +270,35 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
         .andExpect(content().json("[{\"username\":\"" + TEST_USERNAME + "\"}]"));
   }
 
+  // ============================================================================
+  // Filter-Level Authentication Failures (RestTemplate Required)
+  // ============================================================================
+  // The following tests use RestTemplate instead of MockMvc because they test
+  // authentication failures that occur in Spring Security filters, BEFORE reaching
+  // Spring MVC's DispatcherServlet.
+  //
+  // When invalid/expired JWT tokens are processed:
+  // 1. JwtAuthFilter throws JwtAuthenticationException (line 95 in JwtAuthFilter.java)
+  // 2. Spring Security catches this and delegates to JwtAuthenticationEntryPoint
+  // 3. The servlet container sends a 401 Unauthorized response
+  //
+  // MockMvc operates at the Spring MVC layer and may not fully simulate this
+  // filter-level exception handling. RestTemplate makes real HTTP requests through
+  // the entire servlet container stack, ensuring we test the actual behavior.
+  // ============================================================================
+
   @Test
   void shouldReject_WithInvalidToken_UsingRestTemplate() {
-    // Test with RestTemplate to verify real HTTP behavior
-    org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-    headers.set("Authorization", authHeader("invalid_token"));
-    org.springframework.http.HttpEntity<String> entity =
-        new org.springframework.http.HttpEntity<>(headers);
-
     org.springframework.http.ResponseEntity<String> response =
-        restTemplate.exchange(
-            "http://localhost:" + port + "/api/auth/users",
-            org.springframework.http.HttpMethod.GET,
-            entity,
-            String.class);
+        performRestTemplateGet("/api/auth/users", authHeader("invalid_token"));
 
     assertEquals(org.springframework.http.HttpStatus.UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
   void shouldReject_WithMissingToken() throws Exception {
-    org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-
-    org.springframework.http.HttpEntity<String> entity =
-        new org.springframework.http.HttpEntity<>(headers);
-
     org.springframework.http.ResponseEntity<String> response =
-        restTemplate.exchange(
-            "http://localhost:" + port + "/api/auth/users",
-            org.springframework.http.HttpMethod.GET,
-            entity,
-            String.class);
+        performRestTemplateGet("/api/auth/users", null);
 
     assertEquals(org.springframework.http.HttpStatus.UNAUTHORIZED, response.getStatusCode());
   }
@@ -295,18 +315,9 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
     // Generate an expired token (expired 1 hour ago)
     String expiredToken = jwtUtil.generateTokenWithExpiration(savedUser, EXPIRED_TOKEN_OFFSET_MS);
 
-    // Try to access protected endpoint with expired token using RestTemplate
-    org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-    headers.set("Authorization", authHeader(expiredToken));
-    org.springframework.http.HttpEntity<String> entity =
-        new org.springframework.http.HttpEntity<>(headers);
-
+    // Try to access protected endpoint with expired token
     org.springframework.http.ResponseEntity<String> response =
-        restTemplate.exchange(
-            "http://localhost:" + port + "/api/auth/users",
-            org.springframework.http.HttpMethod.GET,
-            entity,
-            String.class);
+        performRestTemplateGet("/api/auth/users", authHeader(expiredToken));
 
     assertEquals(org.springframework.http.HttpStatus.UNAUTHORIZED, response.getStatusCode());
   }
