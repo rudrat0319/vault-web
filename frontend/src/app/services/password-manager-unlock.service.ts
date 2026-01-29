@@ -31,13 +31,18 @@ export class PasswordManagerUnlockService {
 
   setToken(token: string, expiresAt?: string | Date | null): void {
     sessionStorage.setItem(TOKEN_KEY, token);
-    if (expiresAt) {
-      const date =
-        typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
-      if (!Number.isNaN(date.getTime())) {
-        sessionStorage.setItem(EXPIRES_AT_KEY, date.toISOString());
-      }
+    if (expiresAt == null) {
+      sessionStorage.removeItem(EXPIRES_AT_KEY);
+      return;
     }
+    const date =
+      typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+
+    if (Number.isNaN(date.getTime())) {
+      sessionStorage.removeItem(EXPIRES_AT_KEY);
+      return;
+    }
+    sessionStorage.setItem(EXPIRES_AT_KEY, date.toISOString());
   }
 
   clear(): void {
