@@ -1,9 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -12,6 +15,19 @@ import { PasswordEntryDto } from '../../models/dtos/PasswordEntryDto';
 import { PasswordEntryCreateRequestDto } from '../../models/dtos/PasswordEntryCreateRequestDto';
 import { PasswordManagerVaultService } from '../../services/password-manager-vault.service';
 import { PasswordManagerUnlockService } from '../../services/password-manager-unlock.service';
+
+const passwordMatchValidator: ValidatorFn = (
+  control: AbstractControl,
+): ValidationErrors | null => {
+  const password = control.get('password');
+  const confirmPassword = control.get('confirmPassword');
+
+  // Nur Fehler zurückgeben, wenn beide Werte da sind und nicht übereinstimmen
+  if (password && confirmPassword && password.value !== confirmPassword.value) {
+    return { passwordMismatch: true };
+  }
+  return null;
+};
 
 @Component({
   selector: 'app-password-manager',
@@ -38,11 +54,16 @@ export class PasswordManagerComponent implements OnInit {
   vaultInitialized: boolean | null = null;
   isVaultStatusLoading = false;
 
+  isUnlocked = false;
+
   unlockForm: FormGroup;
   setupForm: FormGroup;
   isUnlocking = false;
   isSettingUp = false;
   vaultGateError: string | null = null;
+
+  createPasswordVisible = false;
+  confirmPasswordVisible = false;
 
   constructor(
     private fb: FormBuilder,
@@ -50,14 +71,18 @@ export class PasswordManagerComponent implements OnInit {
     private vaultService: PasswordManagerVaultService,
     private unlockService: PasswordManagerUnlockService,
   ) {
-    this.createForm = this.fb.group({
-      name: ['', [Validators.required, Validators.maxLength(100)]],
-      username: ['', [Validators.required]],
-      password: ['', [Validators.required]],
-      url: [''],
-      notes: ['', [Validators.maxLength(500)]],
-      categoryId: [''],
-    });
+    this.createForm = this.fb.group(
+      {
+        name: ['', [Validators.required, Validators.maxLength(100)]],
+        username: ['', [Validators.required]],
+        password: ['', [Validators.required]],
+        confirmPassword: ['', [Validators.required]],
+        url: [''],
+        notes: ['', [Validators.maxLength(500)]],
+        categoryId: [''],
+      },
+      { validators: passwordMatchValidator },
+    );
 
     const masterPasswordValidators = [
       Validators.required,
@@ -75,11 +100,16 @@ export class PasswordManagerComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.updateUnlockState();
     this.refreshVaultStatus();
   }
 
+  private updateUnlockState(): void {
+    this.isUnlocked = this.unlockService.isUnlocked();
+  }
+
   isVaultUnlocked(): boolean {
-    return this.unlockService.isUnlocked();
+    return this.isUnlocked;
   }
 
   addPassword(): void {
@@ -91,6 +121,10 @@ export class PasswordManagerComponent implements OnInit {
     this.hasSaveError = false;
     this.isEditing = false;
     this.editingId = null;
+
+    this.createPasswordVisible = false;
+    this.confirmPasswordVisible = false;
+
     this.createForm.reset();
     this.isCreateOpen = true;
   }
@@ -104,6 +138,9 @@ export class PasswordManagerComponent implements OnInit {
     this.hasSaveError = false;
     this.isEditing = true;
     this.editingId = entry.id;
+    this.createPasswordVisible = false;
+    this.confirmPasswordVisible = false;
+
     this.createForm.reset({
       name: entry.name ?? '',
       username: entry.username ?? '',
@@ -260,6 +297,7 @@ export class PasswordManagerComponent implements OnInit {
       next: (res) => {
         this.isUnlocking = false;
         this.unlockService.setToken(res.token, res.expiresAt);
+        this.updateUnlockState();
         this.unlockForm.reset();
         this.loadEntries();
       },
@@ -302,14 +340,15 @@ export class PasswordManagerComponent implements OnInit {
     this.vaultService.lock(token).subscribe({
       next: () => {
         this.unlockService.clear();
+        this.updateUnlockState();
         this.revealedPasswords.clear();
         this.revealLoadingIds.clear();
         this.entries = [];
         this.vaultGateError = null;
       },
       error: () => {
-        // Even if backend lock fails, clear local token to be safe.
         this.unlockService.clear();
+        this.updateUnlockState();
         this.revealedPasswords.clear();
         this.revealLoadingIds.clear();
         this.entries = [];
@@ -326,7 +365,8 @@ export class PasswordManagerComponent implements OnInit {
         this.isVaultStatusLoading = false;
         this.vaultInitialized = !!res.initialized;
 
-        if (this.vaultInitialized && this.unlockService.isUnlocked()) {
+        this.updateUnlockState();
+        if (this.vaultInitialized && this.isUnlocked) {
           this.loadEntries();
         }
       },
@@ -347,6 +387,7 @@ export class PasswordManagerComponent implements OnInit {
 
     if (httpErr.status === 409) {
       this.unlockService.clear();
+      this.updateUnlockState();
       this.vaultInitialized = false;
       this.vaultGateError = 'Vault is not initialized yet.';
       return;
@@ -354,6 +395,7 @@ export class PasswordManagerComponent implements OnInit {
 
     if (httpErr.status === 428) {
       this.unlockService.clear();
+      this.updateUnlockState();
       this.revealedPasswords.clear();
       this.revealLoadingIds.clear();
       this.vaultGateError =
